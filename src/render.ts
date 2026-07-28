@@ -218,7 +218,10 @@ function highlight(code: string, name: string, meta?: string) {
   }
 }
 
-const md = createMarkdownExit({ html: true });
+// breaks: true — cards are written line-by-line, so a single newline (or a
+// legacy <br>, which decode() normalizes to "\n") must render as a line
+// break instead of collapsing into a space like standard markdown.
+const md = createMarkdownExit({ html: true, breaks: true });
 md.use(mark as never);
 md.use(alerts as never);
 const ready = initHighlighter().then((value) => (highlighter = value));

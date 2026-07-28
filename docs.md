@@ -39,6 +39,12 @@ Press <kbd>Ctrl</kbd>+<kbd>C</kbd> to copy
 2. Another item
 ```
 
+### Line Breaks
+
+A single newline renders as a line break (GFM style) — write one item per
+line and it displays that way. A blank line starts a new paragraph. Legacy
+`<br>` tags in fields are treated as newlines.
+
 ### Blockquotes
 
 ```markdown
