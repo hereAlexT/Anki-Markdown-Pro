@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 74 20" width="74" height="20" role="img" aria-label="NEW">
-  <rect width="74" height="20" rx="10" fill="#22c55e"/>
-  <circle cx="10" cy="10" r="3" fill="#ffffff">
-    <animate attributeName="r" values="2.5;4;2.5" dur="1.6s" repeatCount="indefinite"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 18" width="136" height="18" role="img" aria-label="Markdown Pro Only">
+  <rect width="136" height="18" rx="9" fill="#22c55e"/>
+  <circle cx="9" cy="9" r="2.4" fill="#ffffff">
+    <animate attributeName="r" values="2;3.4;2" dur="1.6s" repeatCount="indefinite"/>
     <animate attributeName="opacity" values="0.95;0.55;0.95" dur="1.6s" repeatCount="indefinite"/>
   </circle>
-  <text x="47" y="14" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff">NEW</text>
+  <text x="16" y="13" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="700" textLength="110" lengthAdjust="spacingAndGlyphs" fill="#ffffff">Markdown Pro Only</text>
 </svg>
