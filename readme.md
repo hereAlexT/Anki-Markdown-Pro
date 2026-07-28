@@ -14,16 +14,16 @@ Stop fighting Anki's rich-text editor. Write your flashcards the way you write e
 
 ## Highlights
 
-- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **Paste & drag media** — images, audio, and video go straight into the plain-text editor: screenshots, web images, and files land in your collection with the reference inserted at the cursor
-- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **All card types, fully supported**:
+- ![NEW](imgs/badge-new.svg) **Paste & drag media** — images, audio, and video go straight into the plain-text editor: screenshots, web images, and files land in your collection with the reference inserted at the cursor
+- ![NEW](imgs/badge-new.svg) **All card types, fully supported**:
   - `Markdown Pro` — basic front/back
   - `Markdown Pro Cloze` — cloze deletions, with hints and blur mode
   - `Markdown Pro (and reversed)` — two cards per note
   - `Markdown Pro (optional reversed)` — reverse card on demand
   - `Markdown Pro (type in the answer)` — Anki's native green/red answer comparison
-- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **Plays nice with other add-ons** — HyperTTS / AwesomeTTS template edits survive updates; `[sound:]` audio and native replay buttons render correctly
-- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **Correct audio behavior** — question audio plays on the front, answer audio on the back
-- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **Line breaks that just work** — one newline in the editor is one line break on the card
+- ![NEW](imgs/badge-new.svg) **Plays nice with other add-ons** — HyperTTS / AwesomeTTS template edits survive updates; `[sound:]` audio and native replay buttons render correctly
+- ![NEW](imgs/badge-new.svg) **Correct audio behavior** — question audio plays on the front, answer audio on the back
+- ![NEW](imgs/badge-new.svg) **Line breaks that just work** — one newline in the editor is one line break on the card
 - **Syntax highlighting & code annotations** — 300+ languages, 60+ themes, powered by [Shiki](https://shiki.style); line/word highlighting, focus mode, and error/warning markers
 - **Full Markdown** — bold, italic, lists, blockquotes, tables, images, GitHub-style alerts, and more
 - **Clean card design** — polished light/dark styling that matches Anki's native UI
