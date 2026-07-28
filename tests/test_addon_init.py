@@ -187,6 +187,8 @@ def addon(monkeypatch, tmp_path):
     (tpl / "cloze-back.html").write_text("<div>cloze-back</div>", encoding="utf-8")
     (tpl / "reverse-front.html").write_text("<div>rev-front</div>", encoding="utf-8")
     (tpl / "reverse-back.html").write_text("<div>rev-back</div>", encoding="utf-8")
+    (tpl / "type-front.html").write_text("<div>type-front</div>", encoding="utf-8")
+    (tpl / "type-back.html").write_text("<div>type-back</div>", encoding="utf-8")
 
     media = FakeMedia(tmp_path / "media")
     media.path.mkdir()
@@ -393,6 +395,26 @@ class TestEnsureReversedNotetypes:
         assert addon.models.saved == []
 
 
+class TestEnsureTypeNotetype:
+    def test_creates_type_model(self, addon):
+        addon.mod.ensure_type_notetype()
+
+        model = addon.models.added[0]
+        assert model["name"] == "Markdown Pro (type in the answer)"
+        assert [f["name"] for f in model["flds"]] == ["Front", "Back"]
+        assert [t["name"] for t in model["tmpls"]] == ["Card 1"]
+        assert "<div>type-front</div>" in model["tmpls"][0]["qfmt"]
+        assert "<div>type-back</div>" in model["tmpls"][0]["afmt"]
+
+    def test_second_run_is_a_noop(self, addon):
+        addon.mod.ensure_type_notetype()
+        addon.models.saved.clear()
+
+        addon.mod.ensure_type_notetype()
+
+        assert addon.models.saved == []
+
+
 class TestEnsureClozeNotetype:
     def test_creates_cloze_model(self, addon):
         addon.mod.ensure_cloze_notetype()
@@ -477,6 +499,7 @@ class TestProfileLoaded:
             "Markdown Pro Cloze",
             "Markdown Pro (and reversed)",
             "Markdown Pro (optional reversed)",
+            "Markdown Pro (type in the answer)",
         }
 
 

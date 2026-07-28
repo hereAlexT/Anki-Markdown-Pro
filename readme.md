@@ -17,6 +17,7 @@ Download here at 👉 [Anki](https://ankiweb.net/shared/info/2081475824?cb=17852
 - **Full Markdown** with bold, italic, lists, blockquotes, tables, images, alerts, and more
 - **Paste images & media** directly into the editor — files land in collection.media, references are inserted at the cursor
 - **Reversed cards** via the `(and reversed)` / `(optional reversed)` note types
+- **Type in the answer** note type with Anki's native answer comparison
 - **Plays nice with other add-ons** — HyperTTS/AwesomeTTS template edits and `[sound:]` audio survive rendering; only the managed template block is ever rewritten
 - **Clean card design** with polished light/dark styling that matches Anki's native UI
 - **Settings panel** to dynamically pick languages and themes

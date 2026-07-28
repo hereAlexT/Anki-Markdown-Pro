@@ -451,6 +451,17 @@ Two additional note types generate reverse cards:
 - **Markdown Pro (optional reversed)** — has an extra `Add Reverse` field;
   the reverse card is created only when that field is non-empty.
 
+## Type in the Answer
+
+**Markdown Pro (type in the answer)** shows a text input below the rendered
+question; flipping the card shows Anki's standard comparison (green/red
+diff) plus the answer rendered as markdown.
+
+> [!TIP]
+> Anki compares what you type against the raw field text, so keep the
+> `Back` field plain (no markdown markers) on this note type — `**bold**`
+> in the field would require typing the asterisks to match.
+
 ## Pasting Images & Media
 
 Paste or drag images, audio, or video straight into the editor while a

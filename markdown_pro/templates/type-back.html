@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="./_mdpro-review.css" />
+<div class="mdpro-wrapper">
+  <div class="front"></div>
+  <div class="mdpro-typeans">{{type:Back}}</div>
+  <div class="back"></div>
+</div>
+<!-- The question side is embedded via {{FrontSide}} (audio pre-stripped);
+     the raw question text is recovered from its data-question block. The
+     duplicate type marker inside the hidden embed is harmless. -->
+<div id="mdpro-frontside" style="display: none">{{FrontSide}}</div>
+<!-- prettier-ignore -->
+<script id="data-answer" type="text/plain">{{Back}}</script>
+<script type="module">
+  import { render } from "./_mdpro-review.js";
+  const question = document.querySelector("#mdpro-frontside #data-question")?.textContent ?? "";
+  const answer = document.getElementById("data-answer").textContent;
+  render(question, answer);
+</script>

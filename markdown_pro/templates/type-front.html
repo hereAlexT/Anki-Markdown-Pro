@@ -1,0 +1,14 @@
+<link rel="stylesheet" href="./_mdpro-review.css" />
+<div class="mdpro-wrapper">
+  <div class="front"></div>
+  <div class="mdpro-typeans">{{type:Back}}</div>
+</div>
+<!-- prettier-ignore -->
+<script id="data-question" type="text/plain">{{Front}}</script>
+<script type="module">
+  if (!document.getElementById("mdpro-frontside")) {
+    const { render } = await import("./_mdpro-review.js");
+    const question = document.getElementById("data-question").textContent;
+    render(question, "");
+  }
+</script>

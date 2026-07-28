@@ -50,6 +50,8 @@ def read(file, vals):
         ("reverse-back.html", {"{{Front}}": SAMPLE}, ("data-answer",)),
         ("cloze-front.html", {"{{Text}}": SAMPLE}, ("data-text",)),
         ("cloze-back.html", {"{{Extra}}": SAMPLE}, ("data-extra",)),
+        ("type-front.html", {"{{Front}}": SAMPLE}, ("data-question",)),
+        ("type-back.html", {"{{Back}}": SAMPLE}, ("data-answer",)),
     ],
 )
 def test_field_scripts_keep_raw_text(file, vals, keys):
@@ -59,8 +61,8 @@ def test_field_scripts_keep_raw_text(file, vals, keys):
         assert out[key] == SAMPLE
 
 
-FRONT_TEMPLATES = ["front.html", "reverse-front.html", "cloze-front.html"]
-BACK_TEMPLATES = ["back.html", "reverse-back.html", "cloze-back.html"]
+FRONT_TEMPLATES = ["front.html", "reverse-front.html", "cloze-front.html", "type-front.html"]
+BACK_TEMPLATES = ["back.html", "reverse-back.html", "cloze-back.html", "type-back.html"]
 
 
 @pytest.mark.parametrize("file", FRONT_TEMPLATES)
@@ -86,7 +88,7 @@ def test_answer_templates_embed_frontside(file):
 
     assert "{{FrontSide}}" in text
     assert 'id="mdpro-frontside"' in text
-    if file == "back.html":
+    if file in ("back.html", "type-back.html"):
         assert "{{Front}}" not in text.replace("{{FrontSide}}", "")
     elif file == "reverse-back.html":
         assert "{{Back}}" not in text

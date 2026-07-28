@@ -17,7 +17,14 @@ NOTETYPE = "Markdown Pro"
 NOTETYPE_CLOZE = "Markdown Pro Cloze"
 NOTETYPE_REVERSED = "Markdown Pro (and reversed)"
 NOTETYPE_OPT_REVERSED = "Markdown Pro (optional reversed)"
-ALL_NOTETYPES = (NOTETYPE, NOTETYPE_CLOZE, NOTETYPE_REVERSED, NOTETYPE_OPT_REVERSED)
+NOTETYPE_TYPE = "Markdown Pro (type in the answer)"
+ALL_NOTETYPES = (
+    NOTETYPE,
+    NOTETYPE_CLOZE,
+    NOTETYPE_REVERSED,
+    NOTETYPE_OPT_REVERSED,
+    NOTETYPE_TYPE,
+)
 MENU = "Markdown Pro"
 
 # Bump when the managed template block changes incompatibly.
@@ -232,22 +239,23 @@ def ensure_all_notetypes():
     ensure_cloze_notetype()
     ensure_reversed_notetype()
     ensure_optional_reversed_notetype()
+    ensure_type_notetype()
 
 
-def ensure_notetype():
+def _ensure_front_back_notetype(name: str, template_name: str, front_file: str, back_file: str):
     mm = mw.col.models
-    m = mm.by_name(NOTETYPE)
+    m = mm.by_name(name)
 
     if m:
         changed = apply_template(
-            m["tmpls"][0], get_template("front.html"), get_template("back.html")
+            m["tmpls"][0], get_template(front_file), get_template(back_file)
         )
         changed |= apply_fields(m)
         if changed:
             mm.save(m)
         return
 
-    m = mm.new(NOTETYPE)
+    m = mm.new(name)
     m["css"] = DEFAULT_CSS
     front = mm.new_field("Front")
     front["plainText"] = True
@@ -256,12 +264,22 @@ def ensure_notetype():
     back["plainText"] = True
     mm.add_field(m, back)
 
-    t = mm.new_template("Default")
-    t["qfmt"] = merge_template("", get_template("front.html"))
-    t["afmt"] = merge_template("", get_template("back.html"))
+    t = mm.new_template(template_name)
+    t["qfmt"] = merge_template("", get_template(front_file))
+    t["afmt"] = merge_template("", get_template(back_file))
     mm.add_template(m, t)
 
     mm.add(m)
+
+
+def ensure_notetype():
+    _ensure_front_back_notetype(NOTETYPE, "Default", "front.html", "back.html")
+
+
+def ensure_type_notetype():
+    _ensure_front_back_notetype(
+        NOTETYPE_TYPE, "Card 1", "type-front.html", "type-back.html"
+    )
 
 
 def _reversed_pairs(wrap_condition: str = None):
