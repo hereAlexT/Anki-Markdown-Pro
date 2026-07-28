@@ -14,7 +14,7 @@ Stop fighting Anki's rich-text editor. Write your flashcards the way you write e
 
 ## Highlights
 
-- ![NEW](imgs/badge-new.svg) **Paste & drag media** — images, audio, and video go straight into the plain-text editor: screenshots, web images, and files land in your collection with the reference inserted at the cursor
+- ![NEW ](imgs/badge-new.svg) **Paste & drag media** — images, audio, and video go straight into the plain-text editor: screenshots, web images, and files land in your collection with the reference inserted at the cursor
 - ![NEW](imgs/badge-new.svg) **All card types, fully supported**:
   - `Markdown Pro` — basic front/back
   - `Markdown Pro Cloze` — cloze deletions, with hints and blur mode
