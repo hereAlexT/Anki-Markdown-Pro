@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="./_mdpro-review.css" />
+<div class="mdpro-wrapper">
+  <div class="front"></div>
+  <div class="back"></div>
+</div>
+<!-- Native answer-side audio: revealed cloze audio autoplays, matching stock
+     cloze note types. Hidden because we render the cloze ourselves. -->
+<div style="display: none">{{cloze:Text}}</div>
+<!-- Raw text comes from the embedded front side (audio already stripped by
+     Anki's question rendering), so Text audio isn't extracted twice here. -->
+<div id="mdpro-frontside" style="display: none">{{FrontSide}}</div>
+<!-- prettier-ignore -->
+<script id="data-extra" type="text/plain">{{Extra}}</script>
+<script type="module">
+  import { renderCloze } from "./_mdpro-review.js";
+  const text = document.querySelector("#mdpro-frontside #data-text")?.textContent ?? "";
+  const extra = document.getElementById("data-extra").textContent;
+  const ord = parseInt(document.querySelector(".card")?.className.match(/card(\d+)/)?.[1] || "1");
+  renderCloze(text, extra, ord, "back");
+</script>

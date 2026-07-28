@@ -1,0 +1,285 @@
+"""Shiki language and theme management for Markdown Pro.
+
+Downloads language grammars and themes from esm.sh and manages them
+in collection.media for mobile sync.
+"""
+
+from pathlib import Path
+from typing import Optional
+import urllib.request
+import ssl
+import json
+import re
+
+ADDON_DIR = Path(__file__).parent
+ESM_BASE = "https://esm.sh/@shikijs"
+
+_DATA = json.loads((ADDON_DIR / "shiki-data.json").read_text(encoding="utf-8"))
+SHIKI_VERSION = _DATA["version"]
+AVAILABLE_LANGS = _DATA["languages"]
+AVAILABLE_THEMES = _DATA["themes"]
+
+
+DEFAULT_CONFIG = json.loads((ADDON_DIR / "config.json").read_text(encoding="utf-8"))
+
+
+# Pure functions
+
+_IMPORT_RE = re.compile(r"""from\s*["']\./([^"'.]+)\.mjs["']""")
+_LOCAL_RE = re.compile(r'from"\.\/_mdpro-lang-([^.]+)\.js"')
+
+def esm_url(kind: str, name: str, version: str) -> str:
+    """Generate esm.sh URL for a language or theme module."""
+    pkg = "langs" if kind == "lang" else "themes"
+    return f"{ESM_BASE}/{pkg}@{version}/es2022/{name}.mjs"
+
+
+def is_alias_module(content: bytes) -> Optional[str]:
+    """Check if module is an alias (re-export from another module).
+    Returns the canonical name if it's an alias, None otherwise.
+    """
+    text = content.decode("utf-8")
+    if len(text) < 200:
+        match = _IMPORT_RE.search(text)
+        if match:
+            return match.group(1)
+    return None
+
+
+def lang_deps(content: str) -> list[str]:
+    """Extract language dependency names from module content."""
+    return _IMPORT_RE.findall(content)
+
+
+def rewrite_lang_imports(content: str) -> str:
+    """Rewrite relative .mjs imports to local _mdpro-lang-*.js paths."""
+    return _IMPORT_RE.sub(
+        lambda m: f'from"./_mdpro-lang-{m.group(1)}.js"',
+        content,
+    )
+
+
+# I/O
+
+def fetch_module(url: str) -> bytes:
+    """Fetch module content from esm.sh."""
+    ctx = ssl.create_default_context()
+    req = urllib.request.Request(url, headers={"User-Agent": "AnkiMarkdown/1.0"})
+    with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+        return resp.read()
+
+
+# Store
+
+class ShikiStore:
+    def __init__(self, dir: Path, version: str = SHIKI_VERSION):
+        self.dir = dir
+        self.version = version
+
+    def download_lang(self, name: str, _seen: Optional[set[str]] = None):
+        """Download a language grammar, resolving aliases and deps."""
+        if _seen is None:
+            _seen = set()
+        if name in _seen:
+            return
+        _seen.add(name)
+
+        raw = fetch_module(esm_url("lang", name, self.version))
+
+        canonical = is_alias_module(raw)
+        if canonical:
+            raw = fetch_module(esm_url("lang", canonical, self.version))
+
+        text = raw.decode("utf-8")
+        deps = lang_deps(text)
+        text = rewrite_lang_imports(text)
+
+        (self.dir / f"_mdpro-lang-{name}.js").write_text(text, encoding="utf-8")
+
+        for dep in deps:
+            self.download_lang(dep, _seen)
+
+    def download_theme(self, name: str):
+        """Download a theme and save to store directory."""
+        raw = fetch_module(esm_url("theme", name, self.version))
+        (self.dir / f"_mdpro-theme-{name}.js").write_bytes(raw)
+
+    def needs_redownload(self, name: str) -> bool:
+        """Check if a language file is missing, broken, or has missing deps at any depth."""
+        stack = [name]
+        seen = set()
+
+        while stack:
+            lang = stack.pop()
+            if lang in seen:
+                continue
+            seen.add(lang)
+
+            path = self.dir / f"_mdpro-lang-{lang}.js"
+            if not path.exists():
+                return True
+
+            text = path.read_text(encoding="utf-8")
+            if _IMPORT_RE.search(text):
+                return True
+
+            stack.extend(_LOCAL_RE.findall(text))
+
+        return False
+
+    def local_langs(self) -> set[str]:
+        """Get set of language names that exist locally."""
+        return {f.stem.removeprefix("_mdpro-lang-") for f in self.dir.glob("_mdpro-lang-*.js")}
+
+    def local_themes(self) -> set[str]:
+        """Get set of theme names that exist locally."""
+        return {f.stem.removeprefix("_mdpro-theme-") for f in self.dir.glob("_mdpro-theme-*.js")}
+
+    def local_deps(self, name: str) -> list[str]:
+        """Get direct local deps for a downloaded language."""
+        path = self.dir / f"_mdpro-lang-{name}.js"
+        if not path.exists():
+            return []
+        text = path.read_text(encoding="utf-8")
+        return sorted(set(_LOCAL_RE.findall(text)))
+
+    def local_graph(self) -> dict[str, list[str]]:
+        """Get local language graph keyed by installed language."""
+        return {
+            name: self.local_deps(name)
+            for name in sorted(self.local_langs())
+        }
+
+    def collect_deps(self, roots: set[str]) -> set[str]:
+        """Collect transitive local language deps from the given roots."""
+        deps = set()
+        seen = set()
+        stack = list(roots)
+
+        while stack:
+            name = stack.pop()
+            if name in seen:
+                continue
+            seen.add(name)
+
+            path = self.dir / f"_mdpro-lang-{name}.js"
+            if not path.exists():
+                continue
+
+            text = path.read_text(encoding="utf-8")
+            for dep in _LOCAL_RE.findall(text):
+                if dep in deps:
+                    continue
+                deps.add(dep)
+                stack.append(dep)
+
+        return deps
+
+    def cleanup(self, config: dict) -> list[str]:
+        """Remove unused language/theme files. Returns removed filenames."""
+        removed = []
+        roots = set(config.get("languages", []))
+        keep = roots | self.collect_deps(roots)
+        themes = {config["themes"]["light"], config["themes"]["dark"]}
+
+        for f in self.dir.glob("_mdpro-lang-*.js"):
+            name = f.stem.removeprefix("_mdpro-lang-")
+            if name not in keep:
+                f.unlink()
+                removed.append(f.name)
+
+        for f in self.dir.glob("_mdpro-theme-*.js"):
+            name = f.stem.removeprefix("_mdpro-theme-")
+            if name not in themes:
+                f.unlink()
+                removed.append(f.name)
+
+        return removed
+
+    def debug_data(self, config: dict) -> dict:
+        """Summarize local languages and their dependency graph."""
+        roots = sorted(set(config.get("languages", [])))
+        graph = self.local_graph()
+        have = sorted(graph)
+        miss = sorted(set(roots) - set(have))
+        deps = sorted(set(have) - set(roots))
+        rev: dict[str, list[str]] = {}
+
+        for name, vals in graph.items():
+            for dep in vals:
+                rev.setdefault(dep, []).append(name)
+        for vals in rev.values():
+            vals.sort()
+        return {
+            "roots": roots,
+            "graph": graph,
+            "have": have,
+            "miss": miss,
+            "deps": deps,
+            "rev": rev,
+            "themes": sorted(self.local_themes()),
+        }
+
+    def debug_text(self, config: dict) -> str:
+        """Format local Shiki state as plain text for issue reports."""
+        data = self.debug_data(config)
+        lines = [
+            f"shiki: {self.version}",
+            f"selected languages: {', '.join(data['roots']) or '-'}",
+            f"installed languages: {', '.join(data['have']) or '-'}",
+            f"missing selected: {', '.join(data['miss']) or '-'}",
+            f"dependency-only: {', '.join(data['deps']) or '-'}",
+            f"installed themes: {', '.join(data['themes']) or '-'}",
+            "dependency graph:",
+        ]
+        if data["graph"]:
+            for name in data["have"]:
+                deps = ", ".join(data["graph"][name]) or "-"
+                refs = ", ".join(data["rev"].get(name, [])) or "-"
+                lines.append(f"  - {name}: deps={deps}; used_by={refs}")
+        else:
+            lines.append("  -")
+        return "\n".join(lines)
+
+    def sync(self, config: dict) -> tuple[list[str], list[str]]:
+        """Download missing/broken languages and themes.
+
+        Returns (downloaded, errors) lists.
+        """
+        downloaded = []
+        errors = []
+
+        for lang in config.get("languages", []):
+            if self.needs_redownload(lang):
+                try:
+                    self.download_lang(lang)
+                    downloaded.append(f"_mdpro-lang-{lang}.js")
+                except Exception as e:
+                    errors.append(f"Failed to download {lang}: {e}")
+
+        for theme in [config["themes"]["light"], config["themes"]["dark"]]:
+            if not (self.dir / f"_mdpro-theme-{theme}.js").exists():
+                try:
+                    self.download_theme(theme)
+                    downloaded.append(f"_mdpro-theme-{theme}.js")
+                except Exception as e:
+                    errors.append(f"Failed to download theme {theme}: {e}")
+
+        return downloaded, errors
+
+
+# Default instance
+store = ShikiStore(ADDON_DIR)
+
+
+# Anki glue (lazy-import aqt)
+
+def get_config() -> dict:
+    """Get add-on config, falling back to defaults."""
+    from aqt import mw
+    return mw.addonManager.getConfig(__name__.split(".")[0]) or DEFAULT_CONFIG
+
+
+def generate_config_json() -> str:
+    """Generate JSON config string for embedding in templates."""
+    return json.dumps(get_config(), separators=(",", ":"))

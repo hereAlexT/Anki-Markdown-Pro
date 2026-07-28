@@ -1,0 +1,431 @@
+import "./style.css";
+import mark from "markdown-it-mark";
+import alerts from "markdown-it-github-alerts";
+import { createMarkdownExit } from "markdown-exit";
+import { createHighlighterCore } from "@shikijs/core";
+import { createJavaScriptRegexEngine } from "@shikijs/engine-javascript";
+import type { HighlighterCore } from "@shikijs/core";
+import type { ShikiTransformer } from "shiki";
+import type { Element } from "hast";
+import {
+  transformerMetaHighlight,
+  transformerMetaWordHighlight,
+  transformerNotationErrorLevel,
+  transformerNotationFocus,
+} from "@shikijs/transformers";
+import { processCloze, postProcessCloze, type Side } from "./cloze";
+import { sanitizeInline, sanitizeBlock } from "./sanitize";
+import { extractAv, restoreAv } from "./av";
+
+// Config from inline JSON (injected by Python)
+interface Config {
+  languages: string[];
+  themes: { light: string; dark: string };
+  cardless: boolean;
+}
+
+function getConfig(): Config {
+  const el = document.getElementById("mdpro-config");
+  if (!el?.textContent) {
+    return {
+      languages: ["text"],
+      themes: { light: "vitesse-light", dark: "vitesse-dark" },
+      cardless: false,
+    };
+  }
+  return JSON.parse(el.textContent);
+}
+
+const config = getConfig();
+const themes = config.themes;
+
+async function loadLanguages() {
+  const results = await Promise.allSettled(
+    config.languages.map((name) => import(/* @vite-ignore */ `./_mdpro-lang-${name}.js`)),
+  );
+  return results.flatMap((r, i) => {
+    if (r.status === "fulfilled") return [r.value.default].flat();
+    console.log(`[mdpro] Failed to load language: ${config.languages[i]}`);
+    return [];
+  });
+}
+
+async function loadThemes() {
+  const names = [...new Set([config.themes.light, config.themes.dark])];
+  const results = await Promise.allSettled(names.map((name) => import(/* @vite-ignore */ `./_mdpro-theme-${name}.js`)));
+  return results.flatMap((r, i) => {
+    if (r.status === "fulfilled") return [r.value.default];
+    console.log(`[mdpro] Failed to load theme: ${names[i]}`);
+    return [];
+  });
+}
+
+const baseTransformers = [
+  transformerMetaHighlight(),
+  transformerMetaWordHighlight(),
+  transformerNotationErrorLevel({ matchAlgorithm: "v3" }),
+  transformerNotationFocus({ matchAlgorithm: "v3" }),
+];
+
+let highlighter: HighlighterCore;
+const warned = new Set<string>();
+
+async function initHighlighter(): Promise<HighlighterCore> {
+  const [langs, themeList] = await Promise.all([loadLanguages(), loadThemes()]);
+  return createHighlighterCore({
+    langs,
+    themes: themeList,
+    engine: createJavaScriptRegexEngine({ forgiving: true }),
+  });
+}
+
+function classes(node: Element): string[] {
+  const value = node.properties.class;
+  if (Array.isArray(value)) return value.filter((value) => typeof value === "string");
+  if (typeof value === "string") return value.split(/\s+/).filter(Boolean);
+  return [];
+}
+
+function lang(node: Element): string {
+  const child = node.children[0];
+  if (child?.type !== "element") return "text";
+  const value = classes(child).find((value) => value.startsWith("language-"));
+  return value?.slice("language-".length) || "text";
+}
+
+const codeBlock: ShikiTransformer = {
+  name: "code-block",
+  pre(node) {
+    const name = typeof this.options.lang === "string" ? this.options.lang : lang(node);
+    const style = node.properties.style;
+    const figure: Element = {
+      type: "element",
+      tagName: "figure",
+      properties: { class: ["code-block", ...classes(node)], style },
+      children: [
+        { ...node } as Element,
+        {
+          type: "element",
+          tagName: "figcaption",
+          properties: { class: "toolbar" },
+          children: [
+            {
+              type: "element",
+              tagName: "span",
+              properties: { class: "lang" },
+              children: [{ type: "text", value: name }],
+            },
+            {
+              type: "element",
+              tagName: "span",
+              properties: { class: "actions" },
+              children: [
+                {
+                  type: "element",
+                  tagName: "button",
+                  properties: { type: "button", class: "toggle" },
+                  children: [{ type: "text", value: "Reveal" }],
+                },
+                {
+                  type: "element",
+                  tagName: "button",
+                  properties: { type: "button", class: "copy" },
+                  children: [{ type: "text", value: "Copy" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    node.properties = {};
+    Object.assign(node, figure);
+  },
+};
+
+const codeInline: ShikiTransformer = {
+  name: "code-inline",
+  pre(node) {
+    const value = classes(node);
+    node.tagName = "code";
+    node.properties.class = ["code-inline", ...value];
+    // Flatten: move inner <code> children up
+    const inner = node.children[0] as Element;
+    if (inner?.tagName === "code") {
+      node.children = inner.children;
+    }
+  },
+};
+
+/** Parse an HTML string and return its root element. */
+function parse(html: string): HTMLElement | null {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html;
+  return tpl.content.firstElementChild as HTMLElement;
+}
+
+// Fallback skeleton for code blocks rendered before Shiki is ready.
+// Cloned per block — textContent/dataset fills are inherently XSS-safe.
+const skeleton = parse(
+  `<figure class="code-block" data-pending>` +
+    `<pre><code></code></pre>` +
+    `<figcaption class="toolbar"><span class="lang"></span>` +
+    `<span class="actions">` +
+    `<button type="button" class="toggle">Reveal</button>` +
+    `<button type="button" class="copy">Copy</button>` +
+    `</span></figcaption></figure>`,
+)!;
+
+function warn(name: string) {
+  if (!name || name === "text" || warned.has(name)) return;
+  warned.add(name);
+  console.log(
+    `[mdpro] Language not loaded: ${name}. Falling back to plain text. Open Markdown Pro settings to enable and download it.`,
+  );
+}
+
+function plain(code: string, name: string, meta?: string, pending = false) {
+  const el = skeleton.cloneNode(true) as HTMLElement;
+  el.querySelector("code")!.textContent = code;
+  el.querySelector(".lang")!.textContent = name;
+  if (meta) el.dataset.meta = meta;
+  if (!pending) el.removeAttribute("data-pending");
+  return el.outerHTML;
+}
+
+function highlight(code: string, name: string, meta?: string) {
+  if (!highlighter) {
+    return plain(code, name, meta, true);
+  }
+
+  if (!highlighter.getLoadedLanguages().includes(name)) {
+    warn(name);
+    return plain(code, name, meta);
+  }
+
+  try {
+    return highlighter.codeToHtml(code, {
+      lang: name,
+      themes,
+      meta: { __raw: meta },
+      defaultColor: false,
+      transformers: [...baseTransformers, codeBlock],
+    });
+  } catch {
+    warn(name);
+    return plain(code, name, meta);
+  }
+}
+
+const md = createMarkdownExit({ html: true });
+md.use(mark as never);
+md.use(alerts as never);
+const ready = initHighlighter().then((value) => (highlighter = value));
+
+// Only allow safe HTML (tag + attribute allowlist, URL scheme checks)
+md.renderer.rules.html_inline = (tokens, idx) => sanitizeInline(tokens[idx].content);
+md.renderer.rules.html_block = (tokens, idx) => sanitizeBlock(tokens[idx].content);
+md.renderer.rules.fence = (tokens, idx) => {
+  const { content, info } = tokens[idx];
+  const [lang, ...rest] = info.split(/\s+/);
+  return highlight(content.trimEnd(), lang || "text", rest.join(" "));
+};
+
+// Inline code: `code`{lang}
+md.core.ruler.after("inline", "inline-code-lang", (state) => {
+  for (const token of state.tokens) {
+    if (token.type !== "inline" || !token.children) continue;
+    for (let i = 0; i < token.children.length; i++) {
+      if (token.children[i].type !== "code_inline") continue;
+      const next = token.children[i + 1];
+      if (next?.type !== "text") continue;
+      const match = next.content.match(/^\{\.?([^{}\s]+)\}(.*)$/);
+      if (!match) continue;
+      const [, lang, rest] = match;
+      token.children[i].meta = { lang };
+      next.content = rest;
+      if (!rest) token.children.splice(i + 1, 1);
+    }
+  }
+});
+
+md.renderer.rules.code_inline = (tokens, idx) => {
+  const { content, meta } = tokens[idx];
+  const escaped = md.utils.escapeHtml(content);
+  if (!meta?.lang) return `<code>${escaped}</code>`;
+  if (!highlighter) return `<code data-pending data-lang="${md.utils.escapeHtml(meta.lang)}">${escaped}</code>`;
+  if (!highlighter.getLoadedLanguages().includes(meta.lang)) {
+    warn(meta.lang);
+    return `<code>${escaped}</code>`;
+  }
+  try {
+    return highlighter.codeToHtml(content, {
+      lang: meta.lang,
+      themes,
+      defaultColor: false,
+      transformers: [codeInline],
+    });
+  } catch {
+    warn(meta.lang);
+    return `<code>${escaped}</code>`;
+  }
+};
+
+// Event delegation for toolbar
+const card = document.querySelector(".card");
+if (navigator.clipboard) card?.classList.add("clipboard");
+
+card?.addEventListener("click", (e) => {
+  const target = e.target as HTMLElement;
+  const block = target.closest(".code-block");
+  if (!block) return;
+
+  const toggle = target.closest(".toggle") as HTMLElement;
+  if (toggle) {
+    const revealed = block.classList.toggle("revealed");
+    toggle.textContent = revealed ? "Hide" : "Reveal";
+  }
+  const copy = target.closest(".copy") as HTMLElement;
+  if (copy) {
+    navigator.clipboard.writeText(block.querySelector("code")?.textContent || "");
+    copy.textContent = "Copied";
+    setTimeout(() => (copy.textContent = "Copy"), 1500);
+  }
+});
+
+// Textarea trick: browser decodes all HTML entities when parsing innerHTML
+const decoder = document.createElement("textarea");
+
+function decode(text: string): string {
+  decoder.innerHTML = text.replace(/<br\s*\/?>/gi, "\n");
+  return decoder.value;
+}
+
+/**
+ * Re-highlight code rendered before Shiki was ready.
+ * Swaps content and copies attributes in-place so layout never shifts.
+ */
+function upgrade(container: HTMLElement) {
+  for (const fig of container.querySelectorAll<HTMLElement>(".code-block[data-pending]")) {
+    const code = fig.querySelector("code");
+    if (!code) continue;
+    const lang = fig.querySelector(".lang")?.textContent || "text";
+    const fresh = parse(highlight(code.textContent?.replace(/\n$/, "") || "", lang, fig.dataset.meta));
+    if (!fresh) continue;
+    const inner = fresh.querySelector("code");
+    if (inner) code.innerHTML = inner.innerHTML;
+    fig.className = fresh.className;
+    if (fresh.style.cssText) fig.style.cssText = fresh.style.cssText;
+    fig.removeAttribute("data-pending");
+    fig.removeAttribute("data-meta");
+  }
+
+  for (const el of container.querySelectorAll<HTMLElement>("code[data-pending]")) {
+    const lang = el.dataset.lang || "text";
+    el.removeAttribute("data-pending");
+    el.removeAttribute("data-lang");
+    if (!highlighter.getLoadedLanguages().includes(lang)) {
+      warn(lang);
+      continue;
+    }
+    try {
+      const fresh = parse(
+        highlighter.codeToHtml(el.textContent || "", {
+          lang,
+          themes,
+          defaultColor: false,
+          transformers: [codeInline],
+        }),
+      );
+      if (!fresh) continue;
+      el.innerHTML = fresh.innerHTML;
+      el.className = fresh.className;
+      if (fresh.style.cssText) el.style.cssText = fresh.style.cssText;
+    } catch {
+      warn(lang);
+      console.log(`[mdpro] Failed to highlight inline code for language: ${lang}`);
+    }
+  }
+}
+
+// Mirror the host's dark-mode class onto our wrapper so theming stays scoped.
+// - Desktop: nightMode + night_mode on <body> (qt/aqt/theme.py body_classes_for_card_ord)
+//   https://github.com/ankitects/anki/blob/main/qt/aqt/theme.py
+// - AnkiDroid: night_mode on <body>
+//   https://github.com/ankidroid/Anki-Android/wiki/Advanced-formatting
+// - AnkiMobile: nightMode on card element
+//   https://docs.ankimobile.net/night-mode.html
+// - AnkiWeb: no class — always light
+function normalizeDarkMode(wrapper: HTMLElement | null) {
+  if (!wrapper) return;
+  const card = document.querySelector(".card");
+  const dark =
+    document.body.classList.contains("nightMode") ||
+    document.body.classList.contains("night_mode") ||
+    card?.classList.contains("nightMode");
+  if (dark) wrapper.classList.add("night-mode");
+}
+
+async function upgradeHighlighter(...els: (HTMLElement | null)[]) {
+  if (!highlighter) {
+    try {
+      await ready;
+      for (const el of els) if (el) upgrade(el);
+    } catch {
+      console.log("[mdpro] Failed to load highlighter");
+    }
+  }
+}
+
+/** Render front/back fields to card DOM. */
+export async function render(front: string, back: string) {
+  const wrapper = document.querySelector<HTMLElement>(".mdpro-wrapper");
+  normalizeDarkMode(wrapper);
+
+  const frontEl = document.querySelector<HTMLElement>(".front");
+  const backEl = document.querySelector<HTMLElement>(".back");
+
+  wrapper?.setAttribute("data-state", "loading");
+  if (config.cardless) wrapper?.classList.add("cardless");
+
+  const avFront = extractAv(decode(front));
+  const avBack = extractAv(decode(back));
+  if (frontEl) frontEl.innerHTML = restoreAv(md.render(avFront.text), avFront.items);
+  if (backEl) backEl.innerHTML = restoreAv(md.render(avBack.text), avBack.items);
+  wrapper?.classList.add("ready");
+
+  await upgradeHighlighter(frontEl, backEl);
+
+  wrapper?.setAttribute("data-state", "ready");
+  wrapper?.classList.add("ready");
+}
+
+/** Render cloze deletion card to DOM. */
+export async function renderCloze(text: string, extra: string, ordinal: number, side: Side) {
+  const wrapper = document.querySelector<HTMLElement>(".mdpro-wrapper");
+  normalizeDarkMode(wrapper);
+
+  const frontEl = document.querySelector<HTMLElement>(".front");
+  const backEl = document.querySelector<HTMLElement>(".back");
+  const raw = decode(text);
+
+  wrapper?.setAttribute("data-state", "loading");
+  if (config.cardless) wrapper?.classList.add("cardless");
+
+  const processed = extractAv(processCloze(raw, ordinal, side));
+  if (frontEl) {
+    frontEl.innerHTML = restoreAv(postProcessCloze(md.render(processed.text)), processed.items);
+  }
+
+  const avExtra = extractAv(decode(extra));
+  if (backEl && avExtra.text.trim()) {
+    backEl.innerHTML = restoreAv(md.render(avExtra.text), avExtra.items);
+  }
+
+  wrapper?.classList.add("ready");
+  await upgradeHighlighter(frontEl, backEl);
+
+  wrapper?.setAttribute("data-state", "ready");
+  wrapper?.classList.add("ready");
+}

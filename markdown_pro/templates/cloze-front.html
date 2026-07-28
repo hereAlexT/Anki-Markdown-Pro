@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="./_mdpro-review.css" />
+<div class="mdpro-wrapper">
+  <div class="front"></div>
+</div>
+<!-- Anki requires {{cloze:Text}} in the template to generate cards per cloze number.
+     Hidden because we render cloze ourselves in JS from the raw {{Text}} field below. -->
+<div style="display: none">{{cloze:Text}}</div>
+<!-- Extra must NOT appear on the front: its audio would autoplay with the question. -->
+<!-- prettier-ignore -->
+<script id="data-text" type="text/plain">{{Text}}</script>
+<script type="module">
+  // Skip when embedded on the back via {{FrontSide}}.
+  if (!document.getElementById("mdpro-frontside")) {
+    const { renderCloze } = await import("./_mdpro-review.js");
+    const text = document.getElementById("data-text").textContent;
+    const ord = parseInt(document.querySelector(".card")?.className.match(/card(\d+)/)?.[1] || "1");
+    renderCloze(text, "", ord, "front");
+  }
+</script>

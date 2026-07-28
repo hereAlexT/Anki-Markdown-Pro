@@ -1,0 +1,17 @@
+Write flashcards in Markdown with the same syntax highlighting you know from your code editor. Powered by [Shiki](https://shiki.style) (the engine behind VS Code), with 300+ languages, multiple themes, and light/dark mode support.
+
+- **Syntax highlighting** with 300+ languages and 60+ themes, only your selections are downloaded and synced
+- **Advanced code annotations** including line highlighting, word highlighting, focus mode, and error/warning markers
+- **Full Markdown** with bold, italic, lists, blockquotes, tables, images, alerts, and more
+- **Clean card design** with polished light/dark styling that matches Anki's native UI
+- **Settings panel** to dynamically pick languages and themes
+- **Cross-platform** works on desktop, AnkiDroid, AnkiMobile, and AnkiWeb
+- **AI agent friendly** built-in [agent skill](https://github.com/hereAlexTeng/markdown-pro#ai-agent-skill) lets AI agents create and manage flashcards via [AnkiConnect](https://foosoft.net/projects/anki-connect/)
+
+See the [documentation](https://github.com/hereAlexTeng/markdown-pro/blob/main/docs.md) for all features and syntax guide.
+
+**Found a bug?** This add-on is actively maintained. Please report issues on [GitHub](https://github.com/hereAlexTeng/markdown-pro/issues) with your Anki version and debug info.
+
+![Markdown Pro card example](https://raw.githubusercontent.com/hereAlexTeng/markdown-pro/main/media/back.png)
+
+[GitHub Repository](https://github.com/hereAlexTeng/markdown-pro)

@@ -1,0 +1,20 @@
+# Build output
+markdown_pro/_mdpro-review.js
+markdown_pro/_mdpro-review.css
+.DS_Store
+markdown_pro/web/editor.js
+markdown_pro/web/editor.css
+
+# Downloaded shiki files (fetched at runtime by Python)
+markdown_pro/_mdpro-lang-*.js
+markdown_pro/_mdpro-theme-*.js
+
+# User config (managed by Anki)
+markdown_pro/meta.json
+
+.DS_Store
+*.ankiaddon
+node_modules
+__pycache__/
+.venv/
+.pytest_cache/

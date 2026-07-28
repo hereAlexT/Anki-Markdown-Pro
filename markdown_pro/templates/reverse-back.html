@@ -1,0 +1,16 @@
+<link rel="stylesheet" href="./_mdpro-review.css" />
+<div class="mdpro-wrapper">
+  <div class="front"></div>
+  <div class="back"></div>
+</div>
+<!-- Reversed card: question (Back field) comes from the embedded front side;
+     the answer reveals the Front field. -->
+<div id="mdpro-frontside" style="display: none">{{FrontSide}}</div>
+<!-- prettier-ignore -->
+<script id="data-answer" type="text/plain">{{Front}}</script>
+<script type="module">
+  import { render } from "./_mdpro-review.js";
+  const question = document.querySelector("#mdpro-frontside #data-question")?.textContent ?? "";
+  const answer = document.getElementById("data-answer").textContent;
+  render(question, answer);
+</script>

@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="./_mdpro-review.css" />
+<div class="mdpro-wrapper">
+  <div class="front"></div>
+  <div class="back"></div>
+</div>
+<!-- The question side is embedded via {{FrontSide}}: Anki strips its audio
+     tags during question rendering, so answer-side autoplay only includes
+     the answer field's audio (native behavior). The raw question text is
+     recovered from the embedded data-question block. -->
+<div id="mdpro-frontside" style="display: none">{{FrontSide}}</div>
+<!-- prettier-ignore -->
+<script id="data-answer" type="text/plain">{{Back}}</script>
+<script type="module">
+  import { render } from "./_mdpro-review.js";
+  const question = document.querySelector("#mdpro-frontside #data-question")?.textContent ?? "";
+  const answer = document.getElementById("data-answer").textContent;
+  render(question, answer);
+</script>

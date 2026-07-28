@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="./_mdpro-review.css" />
+<div class="mdpro-wrapper">
+  <div class="front"></div>
+</div>
+<!-- Only the question field may appear here: Anki collects autoplay audio
+     from the rendered question template, so referencing the Back field
+     would play the answer's audio on the front. -->
+<!-- prettier-ignore -->
+<script id="data-question" type="text/plain">{{Front}}</script>
+<script type="module">
+  // When this template is embedded on the back via {{FrontSide}}, the back
+  // template does the rendering; skip to avoid double-rendering.
+  if (!document.getElementById("mdpro-frontside")) {
+    const { render } = await import("./_mdpro-review.js");
+    const question = document.getElementById("data-question").textContent;
+    render(question, "");
+  }
+</script>
