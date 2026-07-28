@@ -355,8 +355,8 @@ Override default styles in your note type's Styling section (**Browse > Cards > 
 
 | Variable              | Default | Description                   |
 | --------------------- | ------- | ----------------------------- |
-| `--font-size`         | `14px`  | Font size on wide screens     |
-| `--font-size-mobile`  | `12px`  | Font size on small screens    |
+| `--font-size`         | `16px`  | Font size on wide screens     |
+| `--font-size-mobile`  | `14px`  | Font size on small screens    |
 | `--line-height`       | `1.5`   | Line height for text          |
 | `--content-max-width` | `34rem` | Maximum width of card content |
 

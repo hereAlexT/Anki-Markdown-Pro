@@ -213,8 +213,8 @@ def apply_fields(model: dict) -> bool:
 DEFAULT_CSS = (
     "/* Uncomment to customize:\n"
     ".card {\n"
-    "  --font-size: 14px;\n"
-    "  --font-size-mobile: 12px;\n"
+    "  --font-size: 16px;\n"
+    "  --font-size-mobile: 14px;\n"
     "  --line-height: 1.5;\n"
     "  --content-max-width: 34rem;\n"
     "  --note: #2563eb;\n"
