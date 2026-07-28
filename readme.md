@@ -31,7 +31,7 @@ Download here at 👉 [Anki](https://ankiweb.net/shared/info/2081475824?cb=17852
 - **Reversed card note types** — `Markdown Pro (and reversed)` and `Markdown Pro (optional reversed)`
 - **Compatible with template-editing add-ons** like HyperTTS and AwesomeTTS — card templates use a managed block, so anything an add-on adds outside it survives on the next Anki restart
 - `[sound:]` **audio and native replay buttons render correctly** instead of being stripped by the sanitizer
-- **Renamed throughout** (package, note types, media files, CSS classes) so it never collides with an existing `Anki Markdown` install — you can run both side by side, or migrate notes over from the Tools menu
+- **Renamed throughout** (package, note types, media files, CSS classes) so it never collides with an existing `Anki Markdown` install — you can run both side by side
 
 See [docs.md](docs.md) for full usage details on all of the above.
 

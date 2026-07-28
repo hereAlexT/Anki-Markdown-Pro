@@ -18,11 +18,6 @@ NOTETYPE_CLOZE = "Markdown Pro Cloze"
 NOTETYPE_REVERSED = "Markdown Pro (and reversed)"
 NOTETYPE_OPT_REVERSED = "Markdown Pro (optional reversed)"
 ALL_NOTETYPES = (NOTETYPE, NOTETYPE_CLOZE, NOTETYPE_REVERSED, NOTETYPE_OPT_REVERSED)
-# Upstream note types we can migrate notes from (old name -> our name)
-UPSTREAM_NOTETYPES = {
-    "Anki Markdown": NOTETYPE,
-    "Anki Markdown Cloze": NOTETYPE_CLOZE,
-}
 MENU = "Markdown Pro"
 
 # Bump when the managed template block changes incompatibly.
@@ -140,45 +135,6 @@ def add_menu():
     act.triggered.connect(lambda _=False: show_settings())
     menu.addAction(act)
     mw._mdpro_menu = act
-
-    # Offer migration only when upstream note types are present.
-    try:
-        models = mw.col.models
-        has_upstream = any(models.by_name(name) for name in UPSTREAM_NOTETYPES)
-    except Exception:
-        has_upstream = False
-    if has_upstream:
-        migrate = QAction("Migrate notes from Anki Markdown", mw)
-        migrate.triggered.connect(lambda _=False: migrate_from_upstream())
-        menu.addAction(migrate)
-        mw._mdpro_migrate = migrate
-
-
-def migrate_from_upstream():
-    """Move notes from the upstream 'Anki Markdown' note types to ours."""
-    mm = mw.col.models
-    moved = 0
-    for old_name, new_name in UPSTREAM_NOTETYPES.items():
-        old = mm.by_name(old_name)
-        new = mm.by_name(new_name)
-        if not old or not new:
-            continue
-        nids = mm.nids(old["id"])
-        if not nids:
-            continue
-        count = min(len(old["flds"]), len(new["flds"]))
-        fmap = {i: i for i in range(count)}
-        cmap = {i: 0 for i in range(len(old["tmpls"]))}
-        mm.change(old, nids, new, fmap, cmap)
-        moved += len(nids)
-    mw.reset()
-    QMessageBox.information(
-        mw,
-        MENU,
-        f"Moved {moved} note(s) to Markdown Pro note types."
-        if moved
-        else "No notes found on the upstream note types.",
-    )
 
 
 # Managed template blocks
