@@ -4,6 +4,8 @@
 
 Write flashcards in Markdown with full [syntax highlighting](docs.md#code-blocks). Pick from 300+ languages and 60+ themes — only your selections are downloaded and synced. Supports light and dark mode across desktop, mobile, and AnkiWeb.
 
+Download here at 👉 [Anki](https://ankiweb.net/shared/info/2081475824?cb=1785244767408)
+
 <img src="./imgs/screenshot.jpg" alt="Screenshot of Markdown Pro" />
 
 > [!NOTE]
