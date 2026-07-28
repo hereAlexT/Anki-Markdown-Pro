@@ -9,7 +9,7 @@ Download here at 👉 [Anki](https://ankiweb.net/shared/info/2081475824?cb=17852
 <img src="./imgs/screenshot.jpg" alt="Screenshot of Markdown Pro" />
 
 > [!NOTE]
-> Requires [Anki](https://apps.ankiweb.net/) 25.x or later. Go to `Tools → Add-ons → Get Add-ons` and install from a release `.ankiaddon` file (AnkiWeb id pending).
+> Requires [Anki](https://apps.ankiweb.net/) 25.x or later. Go to `Tools → Add-ons → Get Add-ons` and enter [`2081475824`](https://ankiweb.net/shared/info/2081475824), or install from a release `.ankiaddon` file.
 > See the [documentation](docs.md) for all supported features.
 
 - **Syntax highlighting** with 300+ languages and 60+ themes, only your selections are downloaded and synced
