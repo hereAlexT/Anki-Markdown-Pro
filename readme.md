@@ -1,10 +1,10 @@
 # Markdown Pro
 
-> Anki add-on for Markdown notes with syntax highlighting powered by [Shiki](https://shiki.style)
+> Write Anki cards in pure Markdown — beautifully rendered on every device.
 
-Write flashcards in Markdown with full [syntax highlighting](docs.md#code-blocks). Pick from 300+ languages and 60+ themes — only your selections are downloaded and synced. Supports light and dark mode across desktop, mobile, and AnkiWeb.
+Stop fighting Anki's rich-text editor. Write your flashcards the way you write everything else — in Markdown — and get gorgeous, code-ready cards with full [syntax highlighting](docs.md#code-blocks) on desktop, AnkiDroid, AnkiMobile, and AnkiWeb.
 
-Download here at 👉 [Anki](https://ankiweb.net/shared/info/2081475824?cb=1785244767408)
+**Download** 👉 [AnkiWeb `2081475824`](https://ankiweb.net/shared/info/2081475824?cb=1785244767408)
 
 <img src="./imgs/screenshot.jpg" alt="Screenshot of Markdown Pro" />
 
@@ -12,27 +12,24 @@ Download here at 👉 [Anki](https://ankiweb.net/shared/info/2081475824?cb=17852
 > Requires [Anki](https://apps.ankiweb.net/) 25.x or later. Go to `Tools → Add-ons → Get Add-ons` and enter [`2081475824`](https://ankiweb.net/shared/info/2081475824), or install from a release `.ankiaddon` file.
 > See the [documentation](docs.md) for all supported features.
 
-- **Syntax highlighting** with 300+ languages and 60+ themes, only your selections are downloaded and synced
-- **Advanced code annotations** including line highlighting, word highlighting, focus mode, and error/warning markers
-- **Full Markdown** with bold, italic, lists, blockquotes, tables, images, alerts, and more
-- **Paste images & media** directly into the editor — files land in collection.media, references are inserted at the cursor
-- **Reversed cards** via the `(and reversed)` / `(optional reversed)` note types
-- **Type in the answer** note type with Anki's native answer comparison
-- **Plays nice with other add-ons** — HyperTTS/AwesomeTTS template edits and `[sound:]` audio survive rendering; only the managed template block is ever rewritten
-- **Clean card design** with polished light/dark styling that matches Anki's native UI
-- **Settings panel** to dynamically pick languages and themes
-- **Cross-platform** works on desktop, AnkiDroid, AnkiMobile, and AnkiWeb
-- **[AI agent skill](#ai-agent-skill)** built-in skill that lets AI agents create markdown flashcards via [AnkiConnect](https://foosoft.net/projects/anki-connect/)
+## Highlights
 
-
-
-## What's new in this build
-
-- **Paste/drag images, audio, and video** directly into the plain-text editor
-- **Reversed card note types** — `Markdown Pro (and reversed)` and `Markdown Pro (optional reversed)`
-- **Compatible with template-editing add-ons** like HyperTTS and AwesomeTTS — card templates use a managed block, so anything an add-on adds outside it survives on the next Anki restart
-- `[sound:]` **audio and native replay buttons render correctly** instead of being stripped by the sanitizer
-- **Renamed throughout** (package, note types, media files, CSS classes) so it never collides with an existing `Anki Markdown` install — you can run both side by side
+- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **Paste & drag media** — images, audio, and video go straight into the plain-text editor: screenshots, web images, and files land in your collection with the reference inserted at the cursor
+- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **All card types, fully supported**:
+  - `Markdown Pro` — basic front/back
+  - `Markdown Pro Cloze` — cloze deletions, with hints and blur mode
+  - `Markdown Pro (and reversed)` — two cards per note
+  - `Markdown Pro (optional reversed)` — reverse card on demand
+  - `Markdown Pro (type in the answer)` — Anki's native green/red answer comparison
+- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **Plays nice with other add-ons** — HyperTTS / AwesomeTTS template edits survive updates; `[sound:]` audio and native replay buttons render correctly
+- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **Correct audio behavior** — question audio plays on the front, answer audio on the back
+- ![NEW](https://img.shields.io/badge/NEW-22c55e?style=flat-square) **Line breaks that just work** — one newline in the editor is one line break on the card
+- **Syntax highlighting & code annotations** — 300+ languages, 60+ themes, powered by [Shiki](https://shiki.style); line/word highlighting, focus mode, and error/warning markers
+- **Full Markdown** — bold, italic, lists, blockquotes, tables, images, GitHub-style alerts, and more
+- **Clean card design** — polished light/dark styling that matches Anki's native UI
+- **Settings panel** — pick languages and themes dynamically
+- **Cross-platform** — desktop, AnkiDroid, AnkiMobile, and AnkiWeb
+- **[AI agent skill](#ai-agent-skill)** — let AI agents write markdown flashcards via [AnkiConnect](https://foosoft.net/projects/anki-connect/)
 
 See [docs.md](docs.md) for full usage details on all of the above.
 
@@ -48,8 +45,6 @@ After installing the add-on:
 > [!NOTE]
 > See the [documentation](docs.md) for all supported markdown features including code blocks, line highlighting, alerts, and more.
 
-
-
 ## AI Agent Skill
 
 Markdown is a perfect format for AI-generated content, and this add-on leans into that. It ships with a companion skill that lets AI coding agents (Claude Code, Codex, etc.) create and manage markdown flashcards directly from your editor via [AnkiConnect](https://foosoft.net/projects/anki-connect/). The add-on renders the markdown, the skill creates it.
@@ -62,8 +57,6 @@ Install:
 npx skills add hereAlexTeng/markdown-pro -s anki
 ```
 
-
-
 ## Settings
 
 Open the settings panel from `Tools → Add-ons → Markdown Pro → Config`.
@@ -72,8 +65,6 @@ Open the settings panel from `Tools → Add-ons → Markdown Pro → Config`.
 - **Theme** — choose separate Shiki themes for light and dark mode.
 - **UI** — toggle cardless mode for a borderless card design.
 
-
-
 ## Development
 
 See [development.md](development.md) for build, test, and release instructions.
@@ -81,5 +72,3 @@ See [development.md](development.md) for build, test, and release instructions.
 ## Fork Notice
 
 This project is a fork of [terkelg/anki-markdown](https://github.com/terkelg/anki-markdown) by [Terkel Gjervig](https://github.com/terkelg), used under the [MIT License](license). All credit for the original architecture, renderer, and syntax-highlighting engine goes to the upstream project — go star it.
-
-This fork is renamed throughout (package, note types, media files, CSS classes) so it can be installed **alongside** the original without conflicts, and adds paste-to-embed media, reversed card note types, and compatibility fixes so add-ons like HyperTTS keep working.
