@@ -453,14 +453,84 @@ Two additional note types generate reverse cards:
 
 ## Type in the Answer
 
-**Markdown Pro (type in the answer)** shows a text input below the rendered
-question; flipping the card shows Anki's standard comparison (green/red
-diff) plus the answer rendered as markdown.
+The **Markdown Pro (type in the answer)** note type combines markdown
+rendering with Anki's native answer typing.
 
-> [!TIP]
-> Anki compares what you type against the raw field text, so keep the
-> `Back` field plain (no markdown markers) on this note type — `**bold**`
-> in the field would require typing the asterisks to match.
+### Fields
+
+| Field   | Purpose                                                            |
+| ------- | ------------------------------------------------------------------ |
+| `Front` | The question. Full markdown — code blocks, images, alerts, tables. |
+| `Back`  | The expected answer. Keep it plain text (see below).               |
+
+### How It Works
+
+**Question side** — the Front field renders as markdown, with a text input
+below it. Type your answer and press <kbd>Enter</kbd> (or show the answer
+normally) to flip the card.
+
+**Answer side** — three things appear, in order:
+
+1. The rendered question, for context
+2. Anki's native character-level comparison: correct characters in green,
+   wrong ones in red, missed ones marked — exactly like the stock
+   *Basic (type in the answer)* note type
+3. The Back field rendered as markdown
+
+The comparison and the rendered answer are complementary: the diff can only
+show plain text, while the rendered view displays anything else the Back
+field contains (formatting, inline code, images).
+
+### Example
+
+```text
+Front:  What command stages **all** changes, including deletions?
+Back:   git add -A
+```
+
+Review shows the question, you type `git add -A`, and the flip side grades
+your typing character by character, then shows the answer.
+
+### Writing Good Type-In Cards
+
+Anki compares your typing against the **raw field text** — before any
+markdown rendering. This has practical consequences:
+
+- **Keep `Back` plain.** If the field contains `**bold**`, you must type
+  the asterisks to be graded correct. No markdown markers, no HTML.
+- **Keep it short.** Single words, terms, commands, or short phrases grade
+  well; sentences are punishing to type exactly.
+- **No media in `Back`.** An `<img>` tag or `[sound:...]` in the field
+  becomes literal text you'd have to type. Put supporting media in the
+  Front field, or use the regular **Markdown Pro** note type instead.
+- Case matters, as does punctuation — same rules as Anki's stock type-in
+  note type.
+
+### Behavior Details
+
+- The answer is compared by Anki itself (desktop, AnkiDroid, AnkiMobile all
+  implement it natively); this add-on only renders the markdown around it.
+- An empty `Back` field removes the input box on that card.
+- Audio in the `Front` field autoplays on the question side only, following
+  the same rules as the other Markdown Pro note types.
+- The input box and comparison inherit the card's light/dark styling. To
+  customize them, target these selectors in the note type's Styling
+  section:
+
+```css
+/* the input box on the question side */
+.mdpro-typeans input#typeans { }
+
+/* the graded comparison on the answer side */
+.mdpro-typeans code#typeans { }
+```
+
+### Cloze Type-In
+
+`{{type:cloze:...}}` (typing cloze deletions) is not supported yet — cloze
+cards use this add-on's own cloze renderer, which doesn't plug into Anki's
+typed-cloze comparison. Use the regular **Markdown Pro Cloze** note type
+for cloze cards.
 
 ## Pasting Images & Media
 
