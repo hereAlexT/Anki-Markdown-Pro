@@ -532,6 +532,21 @@ cards use this add-on's own cloze renderer, which doesn't plug into Anki's
 typed-cloze comparison. Use the regular **Markdown Pro Cloze** note type
 for cloze cards.
 
+## Custom Note Types
+
+You can build your own note types on top of the Markdown Pro renderer — for
+example a vocabulary note type with `Word` / `Pronunciation` / `Definition`
+fields and multiple cards. Write card templates that load `_mdpro-review.js`
+(clone a Markdown Pro template as a starting point).
+
+**No configuration needed**: any note type whose card templates reference
+the Markdown Pro renderer automatically gets the full markdown editor —
+plain-text editing, media paste, Ctrl+B/I, and cloze buttons (on cloze note
+types). Editor behavior always matches how the cards render.
+
+The add-on never modifies your custom note types' templates; only the
+built-in `Markdown Pro *` note types receive template updates.
+
 ## Pasting Images & Media
 
 Paste or drag images, audio, or video straight into the editor while a

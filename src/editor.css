@@ -26,3 +26,15 @@
     display: none;
   }
 }
+
+/* Markdown cloze buttons: only shown while a markdown cloze note is loaded
+   (Anki's native cloze buttons target the hidden rich-text input). */
+#mdpro-cloze,
+#mdpro-cloze-same {
+  display: none !important;
+}
+
+.mdpro-cloze-active #mdpro-cloze,
+.mdpro-cloze-active #mdpro-cloze-same {
+  display: inline-block !important;
+}

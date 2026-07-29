@@ -18,6 +18,7 @@ class FakeHooks:
         self.webview_did_inject_style_into_page = []
         self.editor_did_load_note = []
         self.editor_did_init_shortcuts = []
+        self.editor_did_init_buttons = []
         self.webview_did_receive_js_message = []
 
 
@@ -145,6 +146,11 @@ class FakeEditor:
     def __init__(self, note=None):
         self.note = note
         self.web = FakeWeb()
+        self.buttons = []
+
+    def addButton(self, icon, cmd, func, tip="", label="", id=None, **kwargs):
+        self.buttons.append({"cmd": cmd, "func": func, "label": label, "id": id})
+        return f"<button id={id}>{label}</button>"
 
 
 class FakeWebContent:
@@ -175,6 +181,7 @@ def addon(monkeypatch, tmp_path):
         "languages": ["python"],
         "themes": {"light": "vitesse-light", "dark": "vitesse-dark"},
         "cardless": False,
+        "extra_notetypes": [],
     }
     def cfg_json():
         return json.dumps(cfg, separators=(",", ":"))
@@ -306,6 +313,66 @@ class TestOnMungeHtml:
         assert addon.mod.on_munge_html(txt, FakeEditor(FakeNote("Basic"))) == txt
         assert addon.mod.on_munge_html(txt, FakeEditor(FakeNote("Markdown Pro"))) == "**x**"
         assert addon.mod.on_munge_html(txt, FakeEditor(FakeNote("Markdown Pro Cloze"))) == "**x**"
+
+    def test_extra_notetypes_from_config_are_treated_as_markdown(self, addon):
+        txt = "<strong>x</strong>"
+        assert addon.mod.on_munge_html(txt, FakeEditor(FakeNote("Vocab"))) == txt
+
+        addon.cfg["extra_notetypes"] = ["Vocab"]
+
+        assert addon.mod.on_munge_html(txt, FakeEditor(FakeNote("Vocab"))) == "**x**"
+
+    def test_notetypes_using_the_renderer_are_detected_automatically(self, addon):
+        custom = {
+            "name": "Vocab (custom)",
+            "tmpls": [
+                {"qfmt": 'import("./_mdpro-review.js")', "afmt": "x"},
+            ],
+        }
+        plain = {"name": "Vocab (plain)", "tmpls": [{"qfmt": "{{Front}}", "afmt": "{{Back}}"}]}
+
+        assert addon.mod.is_markdown_pro(custom) is True
+        assert addon.mod.is_markdown_pro(plain) is False
+
+
+class TestClozeButtons:
+    def test_buttons_added_with_stable_ids(self, addon):
+        editor = FakeEditor()
+        buttons = []
+
+        addon.mod.on_editor_buttons(buttons, editor)
+
+        assert len(buttons) == 2
+        assert [b["id"] for b in editor.buttons] == ["mdpro-cloze", "mdpro-cloze-same"]
+
+    def test_button_funcs_eval_cloze_js(self, addon):
+        editor = FakeEditor()
+        addon.mod.on_editor_buttons([], editor)
+
+        editor.buttons[0]["func"](editor)
+        editor.buttons[1]["func"](editor)
+
+        assert "mdproCloze(false)" in editor.web.calls[0]
+        assert "mdproCloze(true)" in editor.web.calls[1]
+
+
+class TestEditorLoadNote:
+    def test_activate_passes_cloze_flag(self, addon):
+        class ClozeNote:
+            def note_type(self):
+                return {"name": "Markdown Pro Cloze", "type": 1}
+
+        editor = FakeEditor(ClozeNote())
+        addon.mod.on_editor_load_note(editor)
+        assert "mdproActivate(true)" in editor.web.calls[0]
+
+        editor = FakeEditor(FakeNote("Markdown Pro"))
+        addon.mod.on_editor_load_note(editor)
+        assert "mdproActivate(false)" in editor.web.calls[0]
+
+        editor = FakeEditor(FakeNote("Basic"))
+        addon.mod.on_editor_load_note(editor)
+        assert "mdproDeactivate" in editor.web.calls[0]
 
 
 class TestEnsureNotetype:

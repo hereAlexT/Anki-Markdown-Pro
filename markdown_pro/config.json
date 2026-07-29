@@ -18,5 +18,6 @@
     "light": "vitesse-light",
     "dark": "vitesse-dark"
   },
-  "cardless": false
+  "cardless": false,
+  "extra_notetypes": []
 }

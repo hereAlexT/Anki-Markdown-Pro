@@ -34,8 +34,26 @@ IMAGE_EXTS = {"jpg", "jpeg", "png", "gif", "svg", "webp", "ico", "avif", "bmp"}
 
 
 def is_markdown_pro(notetype) -> bool:
-    """Check if a note type is any Markdown Pro variant."""
-    return bool(notetype) and notetype["name"] in ALL_NOTETYPES
+    """Check if a note type should get the markdown editor treatment.
+
+    True for the built-in Markdown Pro note types, for any note type whose
+    card templates reference the Markdown Pro renderer (so custom note types
+    work with zero configuration — editor behavior always matches how the
+    cards actually render), and for names listed in the `extra_notetypes`
+    config escape hatch.
+    """
+    if not notetype:
+        return False
+    if notetype["name"] in ALL_NOTETYPES:
+        return True
+    for tmpl in notetype.get("tmpls", []):
+        if "_mdpro-review" in tmpl.get("qfmt", "") + tmpl.get("afmt", ""):
+            return True
+    try:
+        extras = get_config().get("extra_notetypes") or []
+    except Exception:
+        extras = []
+    return notetype["name"] in extras
 
 
 def read(name: str) -> str:
@@ -494,10 +512,41 @@ def on_editor_load_note(editor: Editor):
     """Notify JS when a Markdown Pro note is loaded."""
     if not editor.note:
         return
-    if is_markdown_pro(editor.note.note_type()):
-        editor.web.eval("window.mdproActivate && mdproActivate()")
+    notetype = editor.note.note_type()
+    if is_markdown_pro(notetype):
+        is_cloze = json.dumps(notetype.get("type") == 1)
+        editor.web.eval(f"window.mdproActivate && mdproActivate({is_cloze})")
     else:
         editor.web.eval("window.mdproDeactivate && mdproDeactivate()")
+
+
+def on_editor_buttons(buttons: list, editor):
+    """Add cloze buttons that write markdown cloze syntax.
+
+    Anki's native cloze buttons operate on the (hidden) rich-text input, so
+    they stay disabled on Markdown Pro notes. These replacements are hidden
+    via CSS unless a markdown cloze note is loaded.
+    """
+    buttons.append(
+        editor.addButton(
+            None,
+            "mdproCloze",
+            lambda ed: ed.web.eval("window.mdproCloze && mdproCloze(false)"),
+            tip="New cloze deletion — next number (Ctrl+Shift+C)",
+            label="[+]",
+            id="mdpro-cloze",
+        )
+    )
+    buttons.append(
+        editor.addButton(
+            None,
+            "mdproClozeSame",
+            lambda ed: ed.web.eval("window.mdproCloze && mdproCloze(true)"),
+            tip="Same cloze deletion — reuse current number (Ctrl+Alt+Shift+C)",
+            label="[=]",
+            id="mdpro-cloze-same",
+        )
+    )
 
 
 def on_editor_shortcuts(shortcuts: list, editor):
@@ -534,4 +583,5 @@ _hook("webview_will_set_content", on_webview_set_content)
 _hook("webview_did_inject_style_into_page", on_style_injected)
 _hook("editor_did_load_note", on_editor_load_note)
 _hook("editor_did_init_shortcuts", on_editor_shortcuts)
+_hook("editor_did_init_buttons", on_editor_buttons)
 _hook("webview_did_receive_js_message", on_js_message)

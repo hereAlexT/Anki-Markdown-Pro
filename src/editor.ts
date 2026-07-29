@@ -39,9 +39,10 @@ async function setOption(key: string, value: unknown): Promise<void> {
   await Promise.all(plainTexts.map((pt) => pt.codeMirror.setOption(key, value)));
 }
 
-globalThis.mdproActivate = async () => {
+globalThis.mdproActivate = async (isCloze = false) => {
   await loaded;
   document.body.classList.add("mdpro-active");
+  document.body.classList.toggle("mdpro-cloze-active", !!isCloze);
   for (const fn of settings) globalThis[fn]?.(false);
   await setPlainText(true);
   await setOption("mode", "null");
@@ -49,7 +50,7 @@ globalThis.mdproActivate = async () => {
 
 globalThis.mdproDeactivate = async () => {
   await loaded;
-  document.body.classList.remove("mdpro-active");
+  document.body.classList.remove("mdpro-active", "mdpro-cloze-active");
   for (const fn of settings) globalThis[fn]?.(true);
   await setPlainText(false);
 };
@@ -239,6 +240,91 @@ globalThis.mdproWrap = (marker: string) => {
   const sel = document.getSelection()?.toString() ?? "";
   insertText(marker + sel + marker);
 };
+
+// Cloze insertion
+////////////////////////////////////////////////////////////////////////////
+
+/** Read the live CodeMirror documents of all plain-text inputs.
+
+ * The Svelte field stores lag behind the editor (they sync on debounce/blur),
+ * so a cloze inserted a moment ago wouldn't be counted. The CM document is
+ * the ground truth. Handles both CodeMirror 5 (getValue, Anki <= 26.05) and
+ * CodeMirror 6 (state.doc, Anki 26.08+). */
+async function fieldTexts(): Promise<string[]> {
+  const texts: string[] = [];
+  for (const pt of plainTexts) {
+    try {
+      const editor: any = await (pt.codeMirror as any).editor;
+      const value = editor?.getValue?.() ?? editor?.state?.doc?.toString?.();
+      if (typeof value === "string") texts.push(value);
+    } catch {
+      // field not mounted; skip
+    }
+  }
+  return texts;
+}
+
+/** The plain-text CodeMirror instance that currently has focus, if any. */
+async function focusedCodeMirror(): Promise<any | null> {
+  for (const pt of plainTexts) {
+    try {
+      const editor: any = await (pt.codeMirror as any).editor;
+      if (editor?.hasFocus?.() || editor?.hasFocus === true) return editor;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+const clozeActive = () => document.body.classList.contains("mdpro-cloze-active");
+
+/** Wrap the selection in {{cN::...}}. sameNumber reuses the highest existing
+ * ordinal (Anki's Ctrl+Alt+Shift+C); otherwise a new one is started. */
+globalThis.mdproCloze = async (sameNumber: boolean) => {
+  if (!active() || !clozeActive()) return;
+  let max = 0;
+  for (const text of await fieldTexts()) {
+    for (const m of text.matchAll(/\{\{c(\d+)::/gi)) {
+      max = Math.max(max, parseInt(m[1], 10));
+    }
+  }
+  const n = sameNumber ? Math.max(1, max) : max + 1;
+  const sel = document.getSelection()?.toString() ?? "";
+  insertText(`{{c${n}::${sel}}}`);
+
+  // With an empty selection, park the cursor inside the braces.
+  if (!sel) {
+    const editor = await focusedCodeMirror();
+    try {
+      if (editor?.getCursor) {
+        // CodeMirror 5
+        const pos = editor.getCursor();
+        editor.setCursor({ line: pos.line, ch: pos.ch - 2 });
+      } else if (editor?.state && editor?.dispatch) {
+        // CodeMirror 6
+        const head = editor.state.selection.main.head;
+        editor.dispatch({ selection: { anchor: head - 2 } });
+      }
+    } catch {
+      // cursor stays after the inserted text; harmless
+    }
+  }
+};
+
+// Anki's native cloze shortcut lives in the (disabled) rich-text toolbar
+// button; reclaim it for markdown cloze notes.
+document.addEventListener(
+  "keydown",
+  (e: KeyboardEvent) => {
+    if (!active() || !clozeActive()) return;
+    if (!(e.ctrlKey || e.metaKey) || !e.shiftKey || e.code !== "KeyC") return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    globalThis.mdproCloze(e.altKey);
+  },
+  true,
+);
 
 async function desiredName(file: File, buf: ArrayBuffer): Promise<string> {
   const name = file.name || "";

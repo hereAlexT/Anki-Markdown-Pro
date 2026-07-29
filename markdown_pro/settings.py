@@ -106,7 +106,7 @@ class ShikiSettingsDialog(QDialog):
         super().__init__(parent or mw)
         self.setWindowTitle("Markdown Pro - Syntax Highlighting")
         self.setMinimumWidth(400)
-        self.setMinimumHeight(500)
+        self.setMinimumHeight(560)
         self.setStyleSheet(
             """
             QFrame[mdproSection="true"] {
@@ -165,6 +165,7 @@ class ShikiSettingsDialog(QDialog):
         lang_layout.addLayout(filter_row)
 
         self.lang_list = QListWidget()
+        self.lang_list.setMinimumHeight(160)
         self.lang_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         self.lang_list.itemSelectionChanged.connect(self.on_selection_changed)
         for lang in sorted(AVAILABLE_LANGS):

@@ -59,6 +59,7 @@ await Bun.write(
       languages: config.languages,
       themes: config.themes,
       cardless: config.cardless ?? false,
+      extra_notetypes: config.extra_notetypes ?? [],
     },
     null,
     2,
