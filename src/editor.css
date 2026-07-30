@@ -20,9 +20,16 @@
     display: none !important;
   }
 
-  /* settings gear, image float/resize toolbar */
-  #settings,
-  .floating {
+  /* settings gear */
+  #settings {
+    display: none;
+  }
+
+  /* Hide the rich-text-only popovers (image float/resize toolbar, MathJax
+     editor). Anki portals every popover to <body> as .floating, so hiding
+     the class outright also kills the tag autocomplete dropdown — it is the
+     only floating element carrying an .autocomplete-menu, so keep that one. */
+  .floating:not(:has(.autocomplete-menu)) {
     display: none;
   }
 }
